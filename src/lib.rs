@@ -39,7 +39,7 @@ fn encode_digest(digest: &[u8]) -> u32 {
     let word: u32 = (((digest[index] as u32) & 0x7f) << 24) |
         (((digest[index + 1] as u32) & 0xff) << 16) |
         (((digest[index + 2] as u32) & 0xff) << 8) |
-        ((digest[index + 3] & 0xff) as u32);
+        (( digest[index + 3] as u32) & 0xff);
     word % 1000000
 }
 
