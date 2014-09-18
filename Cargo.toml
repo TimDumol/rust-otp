@@ -1,0 +1,14 @@
+[package]
+
+name = "otp"
+version = "0.0.1"
+authors = ["Tim Dumol <tim@timdumol.com>"]
+
+[dependencies.openssl]
+
+git = "https://github.com/sfackler/rust-openssl"
+
+[dependencies.base32]
+
+git = "https://github.com/TimDumol/rust-base32"
+version = "0.1.0"
