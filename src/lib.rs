@@ -43,24 +43,15 @@ fn encode_digest(digest: &[u8]) -> u32 {
 /// Performs the [HMAC-based One-time Password Algorithm](http://en.wikipedia.org/wiki/HMAC-based_One-time_Password_Algorithm)
 /// (HOTP) given an RFC4648 base32 encoded secret, and an integer counter.
 pub fn make_hotp(secret: &[Ascii], counter: i64) -> Option<u32> {
-    let decoded_option = decode_secret(secret);
-    match decoded_option {
-        None => None,
-        Some(decoded) => {
-            Some(encode_digest(calc_digest(decoded.as_slice(), counter).as_slice()))
-        }
-    }
+    decode_secret(secret).map(|decoded| {
+        encode_digest(calc_digest(decoded.as_slice(), counter).as_slice())
+    })
 }
 
 /// Helper function for `make_totp` to make it testable.
 fn make_totp_helper(secret: &[Ascii], time_step: i64, skew: i64, time: i64) -> Option<u32> {
-    let decoded_option = decode_secret(secret);
-    match decoded_option {
-        None => None,
-        Some(decoded) => {
-            Some(encode_digest(calc_digest(decoded.as_slice(), (time + skew)/time_step).as_slice()))
-        }
-    }
+    let counter = (time + skew) / time_step;
+    make_hotp(secret, counter)
 }
 
 /// Performs the [Time-based One-time Password Algorithm](http://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm)
