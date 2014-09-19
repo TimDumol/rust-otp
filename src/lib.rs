@@ -10,6 +10,8 @@ use time::get_time;
 use openssl::crypto::hash::SHA1;
 use openssl::crypto::hmac::HMAC;
 
+use std::io::extensions::u64_to_be_bytes;
+
 /// Decodes a secret (given as an RFC4648 base32-encoded ASCII string)
 /// into a byte string
 fn decode_secret(secret: &[Ascii]) -> Option<Vec<u8>> {
@@ -18,16 +20,11 @@ fn decode_secret(secret: &[Ascii]) -> Option<Vec<u8>> {
 
 /// Calculates the HMAC digest for the given secret and counter.
 fn calc_digest(decoded_secret: &[u8], counter: i64) -> Vec<u8> {
-    let bytestr = [((counter >> 56) & 0xff) as u8,
-            ((counter >> 48) & 0xff) as u8,
-            ((counter >> 40) & 0xff) as u8,
-            ((counter >> 32) & 0xff) as u8,
-            ((counter >> 24) & 0xff) as u8,
-            ((counter >> 16) & 0xff) as u8,
-            ((counter >> 8)  & 0xff) as u8,
-            ( counter        & 0xff) as u8];
     let mut hmac = HMAC(SHA1, decoded_secret);
-    hmac.update(bytestr);
+    u64_to_be_bytes(counter as u64, 8, |bytes| {
+        hmac.update(bytes);
+    });
+
     let rv = hmac.final();
     println!("digest {}", rv);
     rv
@@ -43,7 +40,7 @@ fn encode_digest(digest: &[u8]) -> u32 {
     word % 1000000
 }
 
-/// Performs the [HMAC-based One-time Password Algorithm](http://en.wikipedia.org/wiki/HMAC-based_One-time_Password_Algorithm) 
+/// Performs the [HMAC-based One-time Password Algorithm](http://en.wikipedia.org/wiki/HMAC-based_One-time_Password_Algorithm)
 /// (HOTP) given an RFC4648 base32 encoded secret, and an integer counter.
 pub fn make_hotp(secret: &[Ascii], counter: i64) -> Option<u32> {
     let decoded_option = decode_secret(secret);
@@ -66,7 +63,7 @@ fn make_totp_helper(secret: &[Ascii], time_step: i64, skew: i64, time: i64) -> O
     }
 }
 
-/// Performs the [Time-based One-time Password Algorithm](http://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm) 
+/// Performs the [Time-based One-time Password Algorithm](http://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm)
 /// (TOTP) given an RFC4648 base32 encoded secret, the time step in seconds,
 /// and a skew in seconds.
 pub fn make_totp(secret: &[Ascii], time_step: i64, skew: i64) -> Option<u32> {
