@@ -10,7 +10,7 @@ use time::get_time;
 use openssl::crypto::hash::SHA1;
 use openssl::crypto::hmac::HMAC;
 
-use std::io::extensions::u64_to_be_bytes;
+use std::io::extensions::{u64_to_be_bytes, u64_from_be_bytes};
 
 /// Decodes a secret (given as an RFC4648 base32-encoded ASCII string)
 /// into a byte string
@@ -32,12 +32,10 @@ fn calc_digest(decoded_secret: &[u8], counter: i64) -> Vec<u8> {
 
 /// Encodes the HMAC digest into a 6-digit integer.
 fn encode_digest(digest: &[u8]) -> u32 {
-    let index = (digest[digest.len()-1] & 0xf) as uint;
-    let word: u32 = (((digest[index] as u32) & 0x7f) << 24) |
-        (((digest[index + 1] as u32) & 0xff) << 16) |
-        (((digest[index + 2] as u32) & 0xff) << 8) |
-        (( digest[index + 3] as u32) & 0xff);
-    word % 1000000
+    let offset = *digest.last().unwrap() as uint & 0xf;
+    let code = u64_from_be_bytes(digest, offset, 4) as u32;
+
+    (code & 0x7fffffff) % 1_000_000
 }
 
 /// Performs the [HMAC-based One-time Password Algorithm](http://en.wikipedia.org/wiki/HMAC-based_One-time_Password_Algorithm)
