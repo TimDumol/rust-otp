@@ -19,9 +19,9 @@ fn decode_secret(secret: &[Ascii]) -> Option<Vec<u8>> {
 }
 
 /// Calculates the HMAC digest for the given secret and counter.
-fn calc_digest(decoded_secret: &[u8], counter: i64) -> Vec<u8> {
+fn calc_digest(decoded_secret: &[u8], counter: u64) -> Vec<u8> {
     let mut hmac = HMAC(SHA1, decoded_secret);
-    u64_to_be_bytes(counter as u64, 8, |bytes| {
+    u64_to_be_bytes(counter, 8, |bytes| {
         hmac.update(bytes);
     });
 
@@ -40,24 +40,25 @@ fn encode_digest(digest: &[u8]) -> u32 {
 
 /// Performs the [HMAC-based One-time Password Algorithm](http://en.wikipedia.org/wiki/HMAC-based_One-time_Password_Algorithm)
 /// (HOTP) given an RFC4648 base32 encoded secret, and an integer counter.
-pub fn make_hotp(secret: &[Ascii], counter: i64) -> Option<u32> {
+pub fn make_hotp(secret: &[Ascii], counter: u64) -> Option<u32> {
     decode_secret(secret).map(|decoded| {
         encode_digest(calc_digest(decoded.as_slice(), counter).as_slice())
     })
 }
 
-/// Helper function for `make_totp` to make it testable.
-fn make_totp_helper(secret: &[Ascii], time_step: i64, skew: i64, time: i64) -> Option<u32> {
-    let counter = (time + skew) / time_step;
+/// Helper function for `make_totp` to make it testable. Note that times
+/// before Unix epoch are not supported.
+fn make_totp_helper(secret: &[Ascii], time_step: u64, skew: i64, time: u64) -> Option<u32> {
+    let counter = ((time as i64 + skew) as u64) / time_step;
     make_hotp(secret, counter)
 }
 
 /// Performs the [Time-based One-time Password Algorithm](http://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm)
 /// (TOTP) given an RFC4648 base32 encoded secret, the time step in seconds,
 /// and a skew in seconds.
-pub fn make_totp(secret: &[Ascii], time_step: i64, skew: i64) -> Option<u32> {
+pub fn make_totp(secret: &[Ascii], time_step: u64, skew: i64) -> Option<u32> {
     let now = get_time();
-    make_totp_helper(secret, time_step, skew, now.sec)
+    make_totp_helper(secret, time_step, skew, now.sec as u64)
 }
 
 #[cfg(test)]
