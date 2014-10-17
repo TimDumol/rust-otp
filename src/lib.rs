@@ -25,7 +25,7 @@ fn calc_digest(decoded_secret: &[u8], counter: u64) -> Vec<u8> {
         hmac.update(bytes);
     });
 
-    let rv = hmac.final();
+    let rv = hmac.finalize();
     println!("digest {}", rv);
     rv
 }
