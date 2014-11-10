@@ -10,5 +10,5 @@ git = "https://github.com/sfackler/rust-openssl"
 
 [dependencies.base32]
 
-git = "https://github.com/TimDumol/rust-base32"
-version = "0.1.0"
+git = "https://github.com/andreasots/base32"
+version = "0.1.1"
