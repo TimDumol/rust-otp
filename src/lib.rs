@@ -7,7 +7,7 @@ extern crate base32;
 extern crate time;
 
 use time::get_time;
-use openssl::crypto::hash::SHA1;
+use openssl::crypto::hash::HashType;
 use openssl::crypto::hmac::HMAC;
 
 use std::io::extensions::{u64_to_be_bytes, u64_from_be_bytes};
@@ -15,12 +15,12 @@ use std::io::extensions::{u64_to_be_bytes, u64_from_be_bytes};
 /// Decodes a secret (given as an RFC4648 base32-encoded ASCII string)
 /// into a byte string
 fn decode_secret(secret: &[Ascii]) -> Option<Vec<u8>> {
-    base32::decode(base32::UnpaddedRFC4648Base32, secret)
+    base32::decode(base32::Base32Type::UnpaddedRFC4648Base32, secret)
 }
 
 /// Calculates the HMAC digest for the given secret and counter.
 fn calc_digest(decoded_secret: &[u8], counter: u64) -> Vec<u8> {
-    let mut hmac = HMAC(SHA1, decoded_secret);
+    let mut hmac = HMAC(HashType::SHA1, decoded_secret);
     u64_to_be_bytes(counter, 8, |bytes| {
         hmac.update(bytes);
     });
