@@ -1,19 +1,20 @@
 #![crate_name="otp"]
 #![crate_type="lib"]
 
-extern crate ring;
-extern crate data_encoding;
-
 use std::time::{SystemTime, SystemTimeError};
 use std::convert::TryInto;
 use data_encoding::{BASE32_NOPAD, DecodeError};
+use err_derive::Error;
 use ring::hmac;
 
-#[derive(Debug)]
-pub enum TOTPError {
-    DecodeError(DecodeError),
-    SystemTimeError(SystemTimeError),
-    InvalidDigest
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error(display="invalid time provided")]
+    InvalidTimeError(#[error(source)] SystemTimeError),
+    #[error(display="invalid digest provided: {:?}", _0)]
+    InvalidDigest(Vec<u8>),
+    #[error(display="invalid secret provided")]
+    InvalidSecret(#[error(source)] DecodeError)
 }
 
 /// Decodes a secret (given as an RFC4648 base32-encoded ASCII string)
@@ -29,14 +30,14 @@ fn calc_digest(decoded_secret: &[u8], counter: u64) -> hmac::Tag {
 }
 
 /// Encodes the HMAC digest into a 6-digit integer.
-fn encode_digest(digest: &[u8]) -> Result<u32, TOTPError> {
+fn encode_digest(digest: &[u8]) -> Result<u32, Error> {
     let offset = match digest.last() {
         Some(x) => *x & 0xf,
-        None => return Err(TOTPError::InvalidDigest)
+        None => return Err(Error::InvalidDigest(Vec::from(digest)))
     } as usize;
-    let code_bytes = match digest[offset..offset+4].try_into() {
+    let code_bytes: [u8; 4] = match digest[offset..offset+4].try_into() {
         Ok(x) => x,
-        Err(_) => return Err(TOTPError::InvalidDigest)
+        Err(_) => return Err(Error::InvalidDigest(Vec::from(digest)))
     };
     let code = u32::from_be_bytes(code_bytes);
     Ok((code & 0x7fffffff) % 1_000_000)
@@ -44,17 +45,14 @@ fn encode_digest(digest: &[u8]) -> Result<u32, TOTPError> {
 
 /// Performs the [HMAC-based One-time Password Algorithm](http://en.wikipedia.org/wiki/HMAC-based_One-time_Password_Algorithm)
 /// (HOTP) given an RFC4648 base32 encoded secret, and an integer counter.
-pub fn make_hotp(secret: &str, counter: u64) -> Result<u32, TOTPError> {
-    let decoded = match decode_secret(secret) {
-        Ok(x) => x,
-        Err(err) => return Err(TOTPError::DecodeError(err))
-    };
+pub fn make_hotp(secret: &str, counter: u64) -> Result<u32, Error> {
+    let decoded = decode_secret(secret)?;
     encode_digest(calc_digest(decoded.as_slice(), counter).as_ref())
 }
 
 /// Helper function for `make_totp` to make it testable. Note that times
 /// before Unix epoch are not supported.
-fn make_totp_helper(secret: &str, time_step: u64, skew: i64, time: u64) -> Result<u32, TOTPError> {
+fn make_totp_helper(secret: &str, time_step: u64, skew: i64, time: u64) -> Result<u32, Error> {
     let counter = ((time as i64 + skew) as u64) / time_step;
     make_hotp(secret, counter)
 }
@@ -62,12 +60,9 @@ fn make_totp_helper(secret: &str, time_step: u64, skew: i64, time: u64) -> Resul
 /// Performs the [Time-based One-time Password Algorithm](http://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm)
 /// (TOTP) given an RFC4648 base32 encoded secret, the time step in seconds,
 /// and a skew in seconds.
-pub fn make_totp(secret: &str, time_step: u64, skew: i64) -> Result<u32, TOTPError> {
+pub fn make_totp(secret: &str, time_step: u64, skew: i64) -> Result<u32, Error> {
     let now = SystemTime::now();
-    let time_since_epoch = match now.duration_since(SystemTime::UNIX_EPOCH) {
-        Ok(t) => t,
-        Err(err) => return Err(TOTPError::SystemTimeError(err))
-    };
+    let time_since_epoch = now.duration_since(SystemTime::UNIX_EPOCH)?;
     match make_totp_helper(secret, time_step, skew, time_since_epoch.as_secs() ) {
         Ok(d) => Ok(d),
         Err(err) => return Err(err)
