@@ -1,6 +1,6 @@
 [package]
 name = "otp"
-version = "0.0.5"
+version = "1.0.0"
 authors = ["Tim Dumol <tim@timdumol.com>"]
 description = "A Rust library for performing the HMAC-based One-Time Password (HOTP) and Time-based One-Time Password (TOTP) algorithms."
 homepage = "https://github.com/TimDumol/rust-otp"
@@ -8,12 +8,12 @@ repository = "https://github.com/TimDumol/rust-otp"
 readme = "README.md"
 keywords = ["otp", "totp", "hotp"]
 license = "MIT"
+edition = "2018"
 
 [lib]
 name = "otp"
 
 [dependencies]
-
-openssl = "~0.2.8"
-base32 = "~0.1.1"
-time = "*"
+ascii = "1.0"
+data-encoding = "2.1.2"
+ring = "0.16.9"
