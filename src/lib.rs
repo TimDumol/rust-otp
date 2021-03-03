@@ -71,7 +71,7 @@ pub fn make_totp(secret: &str, time_step: u64, skew: i64) -> Result<u32, Error> 
 
 #[cfg(test)]
 mod tests {
-    use super::{make_hotp, make_totp, make_totp_helper};
+    use super::{make_hotp, make_totp, make_totp_helper, Error};
 
     #[test]
     fn hotp() {
@@ -86,8 +86,11 @@ mod tests {
         assert_eq!(make_totp_helper("BASE32SECRET3232", 3600, 0, 7).unwrap(), 260182);
         assert_eq!(make_totp_helper("BASE32SECRET3232", 30, 0, 35).unwrap(), 55283);
         assert_eq!(make_totp_helper("BASE32SECRET3232", 1, -2, 1403).unwrap(), 316439);
-        assert!(make_totp(&"base32secret3232".to_ascii_uppercase(), 30, 0).is_ok());
-        let bad_secret = make_totp("base32secret3232", 30, 0);
-        assert_eq!("invalid secret provided", bad_secret.unwrap_err().to_string());
+        assert!(
+            matches!(
+                make_totp("base32secret3232", 30, 0).unwrap_err(),
+                Error::InvalidSecret{..}
+            )
+        );
     }
 }
