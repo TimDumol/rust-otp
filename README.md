@@ -18,16 +18,19 @@ git = "https://github.com/TimDumol/rust-otp"
 # Usage
 
 ```rust
-// first argument is the secret, second argument is the counter
-assert_eq!(make_hotp("base32secret3232".to_ascii(), 0), Some(260182));
+   // first argument is the secret, second argument is the counter
+    println!("HOTP: {:?}", otp::make_hotp("base32secret3232".to_ascii_uppercase().as_str(), 0).unwrap());
+    assert_eq!(otp::make_hotp(&"base32secret3232".to_ascii_uppercase(), 0).unwrap(), 260182);
 
-// first argument is the secret, followed by the time step in seconds (Google
-// Authenticator uses a time step of 30), and then the skew in seconds
-// (often used when calculating HOTPs for a sequence of consecutive
-// time intervals, to deal with potential latency and desynchronization).
-assert_eq!(make_totp("base32secret3232".to_ascii(), 30, 0), Some(260182)); // true on Unix epoch
+    // first argument is the secret, followed by the time step in seconds (Google
+    // Authenticator uses a time step of 30), and then the skew in seconds
+    // (often used when calculating HOTPs for a sequence of consecutive
+    // time intervals, to deal with potential latency and desynchronization).
+
+    println!("TOTP: {:?}", otp::make_totp(&("base32secret3232".to_ascii_uppercase()), 30, 0).unwrap());
+    // there is a non-zero possibility of this assertion failing
+    assert_ne!(otp::make_totp(&"base32secret3232".to_ascii_uppercase(), 30, 0).unwrap(), 260182_u32);
 ```
-
 
 # License
 
