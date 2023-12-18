@@ -1,3 +1,5 @@
+# Unmaintained -- please use this fork instead https://github.com/WesleyBatista/rust-otp
+
 # rust-otp
 
 [![Build Status](https://travis-ci.org/TimDumol/rust-otp.svg?branch=master)](https://travis-ci.org/TimDumol/rust-otp)
